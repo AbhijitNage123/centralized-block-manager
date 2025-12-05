@@ -28,14 +28,17 @@ class Block_Manager_Settings {
             30
         );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Admin menu added with hook: ' . $page_hook );
-        }
     }
     
     public function settings_init() {
-        register_setting( 'centralized_block_manager_settings', 'bm_disabled_blocks' );
-        register_setting( 'centralized_block_manager_settings', 'bm_disabled_blocks_by_post_type' );
+        register_setting( 'centralized_block_manager_settings', 'bm_disabled_blocks', array(
+            'sanitize_callback' => array( $this, 'sanitize_disabled_blocks' ),
+            'default' => array()
+        ) );
+        register_setting( 'centralized_block_manager_settings', 'bm_disabled_blocks_by_post_type', array(
+            'sanitize_callback' => array( $this, 'sanitize_post_type_data' ),
+            'default' => array()
+        ) );
         
         add_settings_section(
             'centralized_block_manager_section',
@@ -46,56 +49,34 @@ class Block_Manager_Settings {
     }
     
     public function settings_section_callback() {
-        echo '<p>' . __( 'Manage which blocks are available in the WordPress editor. You can disable blocks globally or for specific post types.', 'centralized-block-manager' ) . '</p>';
+        echo '<p>' . esc_html__( 'Manage which blocks are available in the WordPress editor. You can disable blocks globally or for specific post types.', 'centralized-block-manager' ) . '</p>';
     }
     
     public function settings_page() {
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Settings page loaded. POST data: ' . print_r( $_POST, true ) );
-        }
         
         
         // Check for form submission
-        if ( $_POST && isset( $_POST['centralized_block_manager_nonce'] ) ) {
-            if ( wp_verify_nonce( $_POST['centralized_block_manager_nonce'], 'block_manager_pro_save' ) ) {
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'Block Manager: Form submission detected and nonce verified!' );
-                }
-                $this->handle_form_submission();
-            } else {
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'Block Manager: Form submission detected but nonce verification failed!' );
-                }
-            }
+        if ( ! empty( $_POST ) && check_admin_referer( 'block_manager_pro_save', 'centralized_block_manager_nonce' ) ) {
+            $this->handle_form_submission();
         }
         
         include_once BLOCK_MANAGER_PLUGIN_DIR . 'admin/settings-page.php';
     }
     
     private function handle_form_submission() {
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Form submitted with POST data: ' . print_r( $_POST, true ) );
-        }
+        // Nonce is already verified by caller
         
-        $disabled_blocks_global = isset( $_POST['disabled_blocks_global'] ) ? array_map( 'sanitize_text_field', $_POST['disabled_blocks_global'] ) : array();
-        $disabled_blocks_by_post_type = isset( $_POST['disabled_blocks_by_post_type'] ) ? $this->sanitize_post_type_data( $_POST['disabled_blocks_by_post_type'] ) : array();
+        $disabled_blocks_global = isset( $_POST['disabled_blocks_global'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['disabled_blocks_global'] ) ) : array();
+        $disabled_blocks_by_post_type = isset( $_POST['disabled_blocks_by_post_type'] ) ? $this->sanitize_post_type_data( wp_unslash( $_POST['disabled_blocks_by_post_type'] ) ) : array();
         
         // Auto-include child blocks when parent is disabled
         $disabled_blocks_global = $this->expand_with_child_blocks( $disabled_blocks_global );
         $disabled_blocks_by_post_type = $this->expand_post_type_with_child_blocks( $disabled_blocks_by_post_type );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Saving global disabled blocks (with children): ' . print_r( $disabled_blocks_global, true ) );
-            error_log( 'Block Manager: Saving post type disabled blocks (with children): ' . print_r( $disabled_blocks_by_post_type, true ) );
-        }
         
         $global_updated = update_option( 'bm_disabled_blocks', $disabled_blocks_global );
         $post_type_updated = update_option( 'bm_disabled_blocks_by_post_type', $disabled_blocks_by_post_type );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Global option updated: ' . ( $global_updated ? 'Yes' : 'No' ) );
-            error_log( 'Block Manager: Post type option updated: ' . ( $post_type_updated ? 'Yes' : 'No' ) );
-        }
         
         add_settings_error( 'centralized_block_manager_messages', 'block_manager_pro_message', __( 'Settings saved successfully!', 'centralized-block-manager' ), 'updated' );
     }
@@ -114,9 +95,11 @@ class Block_Manager_Settings {
         }
         
         try {
-            // Get the posted data
-            $disabled_blocks_global = isset( $_POST['disabled_blocks_global'] ) ? array_map( 'sanitize_text_field', $_POST['disabled_blocks_global'] ) : array();
-            $disabled_blocks_by_post_type = isset( $_POST['disabled_blocks_by_post_type'] ) ? $this->sanitize_post_type_data( $_POST['disabled_blocks_by_post_type'] ) : array();
+            // Get the posted data - nonce already verified above
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $disabled_blocks_global = isset( $_POST['disabled_blocks_global'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['disabled_blocks_global'] ) ) : array();
+            // phpcs:ignore WordPress.Security.NonceVerification.Missing
+            $disabled_blocks_by_post_type = isset( $_POST['disabled_blocks_by_post_type'] ) ? $this->sanitize_post_type_data( wp_unslash( $_POST['disabled_blocks_by_post_type'] ) ) : array();
             
             // Auto-include child blocks when parent is disabled
             $disabled_blocks_global = $this->expand_with_child_blocks( $disabled_blocks_global );
@@ -126,10 +109,6 @@ class Block_Manager_Settings {
             $global_updated = update_option( 'bm_disabled_blocks', $disabled_blocks_global );
             $post_type_updated = update_option( 'bm_disabled_blocks_by_post_type', $disabled_blocks_by_post_type );
             
-            // Log for debugging
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'Block Manager: AJAX auto-save completed. Global blocks: ' . count( $disabled_blocks_global ) . ', Post type rules: ' . count( $disabled_blocks_by_post_type ) );
-            }
             
             // Return success response
             wp_send_json_success( array(
@@ -140,9 +119,6 @@ class Block_Manager_Settings {
             ) );
             
         } catch ( Exception $e ) {
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'Block Manager: AJAX auto-save error: ' . $e->getMessage() );
-            }
             
             wp_send_json_error( array( 'message' => 'Save failed: ' . $e->getMessage() ) );
         }
@@ -185,12 +161,28 @@ class Block_Manager_Settings {
         return $expanded;
     }
     
+    public function sanitize_disabled_blocks( $blocks ) {
+        if ( ! is_array( $blocks ) ) {
+            return array();
+        }
+        
+        return array_map( 'sanitize_text_field', $blocks );
+    }
+    
     private function sanitize_post_type_data( $data ) {
+        if ( ! is_array( $data ) ) {
+            return array();
+        }
+        
         $sanitized = array();
         
         foreach ( $data as $block_slug => $post_types ) {
             $block_slug = sanitize_text_field( $block_slug );
-            $post_types = array_map( 'sanitize_text_field', $post_types );
+            if ( is_array( $post_types ) ) {
+                $post_types = array_map( 'sanitize_text_field', $post_types );
+            } else {
+                $post_types = array( sanitize_text_field( $post_types ) );
+            }
             $sanitized[ $block_slug ] = $post_types;
         }
         
@@ -236,9 +228,6 @@ class Block_Manager_Settings {
             );
         }
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Scripts enqueued for page: ' . $hook_suffix );
-        }
     }
     
     public function get_all_blocks() {

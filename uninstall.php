@@ -36,10 +36,6 @@ function centralized_block_manager_uninstall_cleanup() {
     // Clear any cached data related to our plugin
     wp_cache_flush();
     
-    // Log cleanup if debug mode is enabled
-    if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-        error_log( 'Centralized Block Manager: Uninstall cleanup completed - all database options removed' );
-    }
 }
 
 // Run the cleanup
@@ -47,13 +43,10 @@ centralized_block_manager_uninstall_cleanup();
 
 // For multisite installations, clean up each site
 if ( is_multisite() ) {
-    global $wpdb;
+    $sites = get_sites( array( 'number' => 0 ) );
     
-    // Get all blog IDs
-    $blog_ids = $wpdb->get_col( "SELECT blog_id FROM $wpdb->blogs" );
-    
-    foreach ( $blog_ids as $blog_id ) {
-        switch_to_blog( $blog_id );
+    foreach ( $sites as $site ) {
+        switch_to_blog( $site->blog_id );
         centralized_block_manager_uninstall_cleanup();
         restore_current_blog();
     }

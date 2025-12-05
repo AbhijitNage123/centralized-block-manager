@@ -14,10 +14,6 @@ class Block_Filter {
         $disabled_blocks_global = get_option( 'bm_disabled_blocks', array() );
         $disabled_blocks_by_post_type = get_option( 'bm_disabled_blocks_by_post_type', array() );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Filter called with disabled_blocks_global: ' . print_r( $disabled_blocks_global, true ) );
-            error_log( 'Block Manager: Block editor context: ' . print_r( $block_editor_context, true ) );
-        }
         
         // If no blocks are disabled, return early
         if ( empty( $disabled_blocks_global ) && empty( $disabled_blocks_by_post_type ) ) {
@@ -49,15 +45,9 @@ class Block_Filter {
             
             if ( $should_disable ) {
                 $filtered_blocks = array_diff( $filtered_blocks, array( $slug ) );
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'Block Manager: Disabling block: ' . $slug );
-                }
             }
         }
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Returning filtered blocks count: ' . count( $filtered_blocks ) . ' of ' . count( $all_block_slugs ) );
-        }
         
         return array_values( $filtered_blocks );
     }

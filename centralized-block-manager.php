@@ -9,11 +9,9 @@
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: centralized-block-manager
- * Domain Path: /languages
  * Requires at least: 5.0
- * Tested up to: 6.4
+ * Tested up to: 6.9
  * Requires PHP: 7.4
- * Network: false
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,38 +51,22 @@ class Block_Manager {
     }
     
     public function init() {
-        // Add debugging
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Initializing plugin' );
-        }
         
-        $this->load_textdomain();
         $this->includes();
         $this->init_hooks();
     }
     
-    private function load_textdomain() {
-        load_plugin_textdomain( 'centralized-block-manager', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
-    }
     
     private function includes() {
         $filter_file = BLOCK_MANAGER_PLUGIN_DIR . 'includes/class-block-filter.php';
         if ( file_exists( $filter_file ) ) {
             require_once $filter_file;
-        } else {
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'Block Manager: Filter file not found: ' . $filter_file );
-            }
         }
         
         if ( is_admin() ) {
             $settings_file = BLOCK_MANAGER_PLUGIN_DIR . 'admin/class-block-manager-settings.php';
             if ( file_exists( $settings_file ) ) {
                 require_once $settings_file;
-            } else {
-                if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                    error_log( 'Block Manager: Settings file not found: ' . $settings_file );
-                }
             }
         }
     }
@@ -92,18 +74,10 @@ class Block_Manager {
     private function init_hooks() {
         if ( class_exists( 'Block_Filter' ) ) {
             new Block_Filter();
-        } else {
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'Block Manager: Block_Filter class not found' );
-            }
         }
         
         if ( is_admin() && class_exists( 'Block_Manager_Settings' ) ) {
             new Block_Manager_Settings();
-        } else if ( is_admin() ) {
-            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-                error_log( 'Block Manager: Block_Manager_Settings class not found' );
-            }
         }
     }
     
@@ -122,9 +96,6 @@ class Block_Manager {
         // Add activation flag for debugging
         update_option( 'bm_plugin_activated', current_time( 'mysql' ) );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Plugin activated successfully' );
-        }
     }
     
     public function deactivate() {
@@ -136,9 +107,6 @@ class Block_Manager {
         // Clean up any transients
         delete_transient( 'bm_activation_redirect' );
         
-        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-            error_log( 'Block Manager: Plugin deactivated and database cleaned up' );
-        }
     }
     
     public function activation_redirect() {
@@ -147,8 +115,9 @@ class Block_Manager {
             // Delete the transient so we don't redirect again
             delete_transient( 'bm_activation_redirect' );
             
-            // Don't redirect if we're already on the page or doing AJAX
-            if ( isset( $_GET['page'] ) && $_GET['page'] === 'centralized-block-manager' ) {
+            // Don't redirect if we're already on the page or doing AJAX  
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Safe for redirect logic
+            if ( isset( $_GET['page'] ) && sanitize_text_field( wp_unslash( $_GET['page'] ) ) === 'centralized-block-manager' ) {
                 return;
             }
             
