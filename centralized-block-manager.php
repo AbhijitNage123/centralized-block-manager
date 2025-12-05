@@ -5,7 +5,7 @@
  * Description: Manage and control which blocks are available in the WordPress editor with granular control by post type.
  * Version: 1.0.0
  * Author: Abhijit Nage
- * Author URI: https://github.com/centralized-block-manager
+ * Author URI: https://github.com/AbhijitNage123/centralized-block-manager
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: centralized-block-manager
@@ -174,14 +174,3 @@ class Block_Manager {
 
 Block_Manager::get_instance();
 
-// Temporary test function - remove after testing
-add_action( 'admin_footer', function() {
-    if ( current_user_can( 'manage_options' ) && isset( $_GET['test_bm'] ) ) {
-        $disabled_global = get_option( 'bm_disabled_blocks', array() );
-        $disabled_by_type = get_option( 'bm_disabled_blocks_by_post_type', array() );
-        
-        echo '<script>console.log("Block Manager Test:");</script>';
-        echo '<script>console.log("Global disabled:", ' . json_encode( $disabled_global ) . ');</script>';
-        echo '<script>console.log("By post type:", ' . json_encode( $disabled_by_type ) . ');</script>';
-    }
-});

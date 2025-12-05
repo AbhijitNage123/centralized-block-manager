@@ -54,17 +54,6 @@ class Block_Manager_Settings {
             error_log( 'Block Manager: Settings page loaded. POST data: ' . print_r( $_POST, true ) );
         }
         
-        // Check for test actions (debug mode only)
-        if ( $_POST && isset( $_POST['test_nonce'] ) && wp_verify_nonce( $_POST['test_nonce'], 'centralized_block_manager_test' ) ) {
-            if ( isset( $_POST['test_disable'] ) ) {
-                update_option( 'bm_disabled_blocks', array( 'core/archives' ) );
-                add_settings_error( 'centralized_block_manager_messages', 'test_message', 'Test: core/archives block disabled!', 'updated' );
-            } elseif ( isset( $_POST['test_clear'] ) ) {
-                update_option( 'bm_disabled_blocks', array() );
-                update_option( 'bm_disabled_blocks_by_post_type', array() );
-                add_settings_error( 'centralized_block_manager_messages', 'test_message', 'Test: All disabled blocks cleared!', 'updated' );
-            }
-        }
         
         // Check for form submission
         if ( $_POST && isset( $_POST['centralized_block_manager_nonce'] ) ) {

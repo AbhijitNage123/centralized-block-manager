@@ -101,7 +101,7 @@ Initial release of Centralized Block Manager. Provides comprehensive block manag
 
 == Support ==
 
-For support, feature requests, or bug reports, please visit our [GitHub repository](https://github.com/block-manager/centralized-block-manager) or the WordPress.org support forums.
+For support, feature requests, or bug reports, please visit our [GitHub repository](https://github.com/AbhijitNage123/centralized-block-manager) or the WordPress.org support forums.
 
 == Privacy ==
 
